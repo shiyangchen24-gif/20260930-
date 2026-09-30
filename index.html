@@ -171,7 +171,7 @@
 .cat6-lir { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .cat6-lir-item { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
 .cat6-lir-k { display: block; font-size: .78rem; color: var(--muted); }
-.cat6-lir-v { display: block; font-size: .88rem; color: var(--muted); font-family: var(--f-zh); }
+.cat6-lir-v { margin: 0; min-width: 0; display: block; font-size: .88rem; color: var(--muted); font-family: var(--f-zh); }
 .cat6-more { border-top: 1px solid var(--border); }
 .cat6-more-sum {
   display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer;
@@ -340,6 +340,27 @@
 .cat6-small { font-size: .85rem; color: var(--muted); margin: 0; }
 .cat6-formbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 
+/* 情境卡內的使用者評估紀錄（由 JS 寫入） */
+.cat6-ue { border: 1px solid rgba(79,184,168,.35); background: rgba(79,184,168,.06); border-radius: 10px; padding: 12px 14px; }
+.cat6-ue[hidden] { display: none; }
+.cat6-ue-h { margin: 0 0 8px; font-family: var(--f-zh); font-weight: 500; font-size: .92rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cat6-ue-list { margin: 0; display: grid; gap: 6px; }
+.cat6-ue-row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 8px; font-size: .9rem; }
+.cat6-ue-k { color: var(--muted); font-family: var(--f-zh); }
+.cat6-lir-v .cat6-chip { padding: 0 6px; font-size: .78rem; margin-top: 2px; }
+.cat6-ue-v { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.cat6-ue-v--empty { color: var(--muted); }
+.cat6-ue-time { margin: 8px 0 0; }
+.cat6-btn--sm { min-height: 44px; padding: 0 18px; font-size: .92rem; align-self: flex-start; }
+.cat6-btn--danger { background: transparent; color: #FCA5A5; border-color: rgba(255,77,79,.45); }
+.cat6-btn--danger:hover { border-color: var(--lv-vh); }
+.cat6-chip--draft { color: var(--primary); border-style: dashed; }
+.cat6-chip--done { color: #E2E8F0; }
+.cat6-status { margin: 12px 0 0; font-size: .9rem; color: var(--muted); }
+.cat6-status--ok { color: #E2E8F0; }
+.cat6-status--warn { color: var(--primary); }
+.cat6-status--error { color: #FCA5A5; }
+
 /* =========================================================
    8. 評分準則（radio 分頁，CSS 切換）
    ========================================================= */
@@ -505,9 +526,9 @@
         <p class="cat6-stat-sub">A 破解軟體、B 更新延後、C 釣魚匯款</p>
       </li>
       <li class="cat6-card cat6-stat">
-        <div class="cat6-stat-num">0<span class="cat6-stat-of"> / 3</span></div>
+        <div class="cat6-stat-num"><span class="cat6-js-lcount">0</span><span class="cat6-stat-of"> / 3</span></div>
         <p class="cat6-stat-label">已完成可能性評估</p>
-        <p class="cat6-stat-sub">影響程度評估：0 / 3</p>
+        <p class="cat6-stat-sub">影響程度評估：<span class="cat6-js-icount">0</span> / 3</p>
       </li>
       <li class="cat6-card cat6-stat cat6-stat--wide">
         <div class="cat6-stat-num">3<span class="cat6-stat-of"> / 3</span></div>
@@ -515,7 +536,7 @@
         <p class="cat6-stat-sub">評估前建議先釐清各情境的待確認項</p>
       </li>
     </ul>
-    <p class="cat6-note"><span class="cat6-tag cat6-tag--tbc">原型</span><span>此為靜態原型：數字依三筆初始資料呈現，評估面板可即時操作，但不保存資料。儲存、匯出與新增情境將在加入 JavaScript 後實作。</span></p>
+    <p class="cat6-note"><span class="cat6-tag cat6-tag--tbc">原型</span><span>評估面板儲存後，結果會記錄到對應的情境卡，並保存在這台裝置的瀏覽器中。匯出與新增情境為下一階段。</span></p>
 
     <!-- 情境分析 -->
     <section class="cat6-section" id="scenarios" aria-labelledby="cat6-scn-h">
@@ -524,13 +545,13 @@
 
       <div class="cat6-scns">
         <!-- A -->
-        <article class="cat6-card cat6-scn" aria-labelledby="cat6-a-t">
+        <article class="cat6-card cat6-scn" data-scn="A" aria-labelledby="cat6-a-t">
           <div class="cat6-scn-head">
             <span class="cat6-scn-code" aria-hidden="true">A</span>
             <h3 class="cat6-scn-title" id="cat6-a-t">下載免費破解包，導致木馬入侵、潛伏</h3>
           </div>
           <div class="cat6-scn-badges">
-            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none cat6-js-status">未評估</span>
             <span class="cat6-chip cat6-chip--none">待確認 2 項</span>
           </div>
           <p class="cat6-alert"><span class="cat6-alert-title">資料品質提示：</span>原始弱點欄描述停電與供電備援，與破解軟體情境不符，疑似誤植。原文保留於來源紀錄。</p>
@@ -541,12 +562,26 @@
             <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--tbc">待確認</span></dt><dd class="cat6-dd cat6-dd--tbc">待確認：原始內容與情境不符</dd></div>
             <div class="cat6-field-row">
               <dl class="cat6-lir">
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v cat6-js-lik">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v cat6-js-imp">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v cat6-js-risk">未評估</dd></div>
               </dl>
             </div>
           </dl>
+          <div class="cat6-ue cat6-js-ue" hidden>
+            <p class="cat6-ue-h"><span class="cat6-tag cat6-tag--user">使用者評估</span>評估面板紀錄</p>
+            <dl class="cat6-ue-list">
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估期間／範圍</dt><dd class="cat6-ue-v" data-ue="period"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">事件類型</dt><dd class="cat6-ue-v" data-ue="type"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">發起／發生可能性</dt><dd class="cat6-ue-v" data-ue="l1"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">造成影響可能性</dt><dd class="cat6-ue-v" data-ue="l2"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">整體可能性</dt><dd class="cat6-ue-v" data-ue="overall"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">影響程度</dt><dd class="cat6-ue-v" data-ue="impact"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估依據</dt><dd class="cat6-ue-v" data-ue="basis"></dd></div>
+            </dl>
+            <p class="cat6-small cat6-ue-time" data-ue="updatedAt"></p>
+          </div>
+          <a class="cat6-btn cat6-btn--ghost cat6-btn--sm cat6-js-edit" href="#assess">評估此情境</a>
           <details class="cat6-more">
             <summary class="cat6-more-sum">來源紀錄與整理建議</summary>
             <div class="cat6-more-body">
@@ -567,13 +602,13 @@
         </article>
 
         <!-- B -->
-        <article class="cat6-card cat6-scn" aria-labelledby="cat6-b-t">
+        <article class="cat6-card cat6-scn" data-scn="B" aria-labelledby="cat6-b-t">
           <div class="cat6-scn-head">
             <span class="cat6-scn-code" aria-hidden="true">B</span>
             <h3 class="cat6-scn-title" id="cat6-b-t">未更新 Microsoft Defender／系統更新延後</h3>
           </div>
           <div class="cat6-scn-badges">
-            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none cat6-js-status">未評估</span>
             <span class="cat6-chip cat6-chip--none">待確認 3 項</span>
           </div>
           <p class="cat6-alert"><span class="cat6-alert-title">資料品質提示：</span>標題提及 Defender，事件描述卻是作業系統安全性更新；須確認延後的是病毒碼、防護引擎還是系統更新。</p>
@@ -584,12 +619,26 @@
             <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--derived">整理／推論</span></dt><dd class="cat6-dd">更新延後，可能降低防護有效性（待確認更新類型及實際狀態）</dd></div>
             <div class="cat6-field-row">
               <dl class="cat6-lir">
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v cat6-js-lik">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v cat6-js-imp">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v cat6-js-risk">未評估</dd></div>
               </dl>
             </div>
           </dl>
+          <div class="cat6-ue cat6-js-ue" hidden>
+            <p class="cat6-ue-h"><span class="cat6-tag cat6-tag--user">使用者評估</span>評估面板紀錄</p>
+            <dl class="cat6-ue-list">
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估期間／範圍</dt><dd class="cat6-ue-v" data-ue="period"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">事件類型</dt><dd class="cat6-ue-v" data-ue="type"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">發起／發生可能性</dt><dd class="cat6-ue-v" data-ue="l1"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">造成影響可能性</dt><dd class="cat6-ue-v" data-ue="l2"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">整體可能性</dt><dd class="cat6-ue-v" data-ue="overall"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">影響程度</dt><dd class="cat6-ue-v" data-ue="impact"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估依據</dt><dd class="cat6-ue-v" data-ue="basis"></dd></div>
+            </dl>
+            <p class="cat6-small cat6-ue-time" data-ue="updatedAt"></p>
+          </div>
+          <a class="cat6-btn cat6-btn--ghost cat6-btn--sm cat6-js-edit" href="#assess">評估此情境</a>
           <details class="cat6-more">
             <summary class="cat6-more-sum">來源紀錄</summary>
             <div class="cat6-more-body">
@@ -611,13 +660,13 @@
         </article>
 
         <!-- C -->
-        <article class="cat6-card cat6-scn cat6-scn--wide" aria-labelledby="cat6-c-t">
+        <article class="cat6-card cat6-scn cat6-scn--wide" data-scn="C" aria-labelledby="cat6-c-t">
           <div class="cat6-scn-head">
             <span class="cat6-scn-code" aria-hidden="true">C</span>
             <h3 class="cat6-scn-title" id="cat6-c-t">釣魚郵件與匯款查核不足，損失新臺幣 300 萬元</h3>
           </div>
           <div class="cat6-scn-badges">
-            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none cat6-js-status">未評估</span>
             <span class="cat6-chip cat6-chip--none">待確認 3 項</span>
           </div>
           <dl class="cat6-fields">
@@ -627,12 +676,26 @@
             <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">人員缺乏資安意識及防範社交工程警覺性，未仔細辨識寄件者網域或信件內容異常；內部缺乏大額匯款前雙重確認（Double Check）的財務內控機制。</dd></div>
             <div class="cat6-field-row">
               <dl class="cat6-lir">
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
-                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v cat6-js-lik">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v cat6-js-imp">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v cat6-js-risk">未評估</dd></div>
               </dl>
             </div>
           </dl>
+          <div class="cat6-ue cat6-js-ue" hidden>
+            <p class="cat6-ue-h"><span class="cat6-tag cat6-tag--user">使用者評估</span>評估面板紀錄</p>
+            <dl class="cat6-ue-list">
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估期間／範圍</dt><dd class="cat6-ue-v" data-ue="period"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">事件類型</dt><dd class="cat6-ue-v" data-ue="type"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">發起／發生可能性</dt><dd class="cat6-ue-v" data-ue="l1"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">造成影響可能性</dt><dd class="cat6-ue-v" data-ue="l2"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">整體可能性</dt><dd class="cat6-ue-v" data-ue="overall"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">影響程度</dt><dd class="cat6-ue-v" data-ue="impact"></dd></div>
+              <div class="cat6-ue-row"><dt class="cat6-ue-k">評估依據</dt><dd class="cat6-ue-v" data-ue="basis"></dd></div>
+            </dl>
+            <p class="cat6-small cat6-ue-time" data-ue="updatedAt"></p>
+          </div>
+          <a class="cat6-btn cat6-btn--ghost cat6-btn--sm cat6-js-edit" href="#assess">評估此情境</a>
           <details class="cat6-more">
             <summary class="cat6-more-sum">分類整理建議</summary>
             <div class="cat6-more-body">
@@ -656,10 +719,9 @@
     <!-- 評估面板 -->
     <section class="cat6-section" id="assess" aria-labelledby="cat6-eval-h">
       <h2 class="cat6-h2" id="cat6-eval-h">評估面板</h2>
-      <p class="cat6-lead">依序選擇，右側矩陣會標出目前的列、欄與交點。三項輸入都選好才會顯示整體可能性。</p>
+      <p class="cat6-lead">依序選擇，矩陣會標出目前的列、欄與交點。按「儲存到情境分析」後，結果會記錄到對應的情境卡；未填完也能先存成草稿。</p>
 
-      <form class="cat6-eval" aria-label="風險評估表單">
-        <button class="cat6-sr" type="submit" disabled tabindex="-1" aria-hidden="true">停用送出</button>
+      <form class="cat6-eval" aria-label="風險評估表單" novalidate>
         <!-- 欄 1：輸入 -->
         <div class="cat6-col">
           <fieldset class="cat6-step cat6-card">
@@ -830,9 +892,11 @@
             <label class="cat6-label" for="cat6-basis">評估依據 <span class="cat6-tag cat6-tag--user">使用者評估</span></label>
             <textarea class="cat6-input cat6-input--area" id="cat6-basis" name="basis" placeholder="寫下判級理由，例如引用的準則文字與組織狀況"></textarea>
             <div class="cat6-formbar">
+              <button class="cat6-btn cat6-btn--primary" type="submit">儲存到情境分析</button>
               <button class="cat6-btn cat6-btn--ghost" type="reset">清除本次選擇</button>
-              <p class="cat6-small">原型不保存資料，重新整理後會清空。</p>
+              <button class="cat6-btn cat6-btn--danger cat6-js-del" type="button">刪除此情境評估</button>
             </div>
+            <p class="cat6-status cat6-js-msg" role="status" aria-live="polite">選擇情境並填寫後儲存，結果會出現在情境分析的卡片中。</p>
           </div>
         </div>
       </form>
@@ -952,11 +1016,265 @@
         </div>
         <div>
           <p class="cat6-foot-h">原型範圍</p>
-          <p class="cat6-foot-p">純 HTML/CSS。保存、JSON／CSV 匯出、情境增刪改與搜尋需 JavaScript，列為下一階段。</p>
+          <p class="cat6-foot-p">評估紀錄保存在本機瀏覽器（localStorage），換裝置或清除瀏覽資料後不會保留。JSON／CSV 匯出、情境增刪改與搜尋列為下一階段。</p>
         </div>
       </div>
     </footer>
   </main>
 </div>
+<script>
+/* CAT.6 評估紀錄：vanilla JS，無框架、無外部相依 */
+(function () {
+  'use strict';
+  var root = document.querySelector('.cat6');
+  if (!root) return;
+
+  /* ---------- 常數與準則 ---------- */
+  var STORE_KEY = 'cat6.assessments';
+  var SCHEMA_VERSION = 1;
+  var SCENARIO_KEYS = ['A', 'B', 'C'];
+  var LEVELS = {
+    VL: { zh: '極低', en: 'Very Low', code: 'VL', cls: 'vl' },
+    L:  { zh: '低',   en: 'Low',      code: 'L',  cls: 'l'  },
+    M:  { zh: '中',   en: 'Moderate', code: 'M',  cls: 'm'  },
+    H:  { zh: '高',   en: 'High',     code: 'H',  cls: 'h'  },
+    VH: { zh: '極高', en: 'Very High',code: 'VH', cls: 'vh' }
+  };
+  var TYPES = { 'adversarial': '敵對事件（G-2）', 'non-adversarial': '非敵對事件（G-3）' };
+  /* G-5：外層鍵＝事件發起／發生可能性（列），內層鍵＝造成不利影響可能性（欄） */
+  var G5 = {
+    VH: { VL: 'L',  L: 'M',  M: 'H', H: 'VH', VH: 'VH' },
+    H:  { VL: 'L',  L: 'M',  M: 'M', H: 'H',  VH: 'VH' },
+    M:  { VL: 'L',  L: 'L',  M: 'M', H: 'M',  VH: 'H'  },
+    L:  { VL: 'VL', L: 'L',  M: 'L', H: 'M',  VH: 'M'  },
+    VL: { VL: 'VL', L: 'VL', M: 'L', H: 'L',  VH: 'L'  }
+  };
+
+  function has(obj, key) { return obj != null && Object.prototype.hasOwnProperty.call(obj, key); }
+  function overallOf(r) {
+    if (!r || !r.type || !r.l1 || !r.l2) return null;
+    return G5[r.l1][r.l2];
+  }
+
+  /* ---------- 狀態與儲存 ---------- */
+  var state = { schemaVersion: SCHEMA_VERSION, records: {} };
+
+  function cleanText(v, max) { return typeof v === 'string' ? v.slice(0, max) : ''; }
+  function cleanRecord(r) {
+    if (!r || typeof r !== 'object') return null;
+    return {
+      period: cleanText(r.period, 500),
+      type: has(TYPES, r.type) ? r.type : null,
+      l1: has(LEVELS, r.l1) ? r.l1 : null,
+      l2: has(LEVELS, r.l2) ? r.l2 : null,
+      impact: has(LEVELS, r.impact) ? r.impact : null,
+      basis: cleanText(r.basis, 5000),
+      updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : null
+    };
+  }
+  function load() {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      if (!raw) return true;
+      var data = JSON.parse(raw);
+      if (!data || data.schemaVersion !== SCHEMA_VERSION || typeof data.records !== 'object') return true;
+      SCENARIO_KEYS.forEach(function (k) {
+        var r = cleanRecord(data.records[k]);
+        if (r) state.records[k] = r;
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function persist() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- 表單 ---------- */
+  var form = root.querySelector('.cat6-eval');
+  var msgEl = root.querySelector('.cat6-js-msg');
+  var delBtn = root.querySelector('.cat6-js-del');
+  var sel = form.elements['scenario'];
+
+  function checkedValue(name) {
+    var el = form.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+  function setRadio(name, value) {
+    Array.prototype.forEach.call(form.querySelectorAll('input[name="' + name + '"]'), function (el) {
+      el.checked = (value !== null && el.value === value);
+    });
+  }
+  function typeKey(v) { return v === 'adversarial' || v === 'non-adversarial' ? v : null; }
+  function readForm() {
+    return {
+      period: form.elements['period'].value.trim(),
+      type: typeKey(checkedValue('type')),
+      l1: checkedValue('l1'),
+      l2: checkedValue('l2'),
+      impact: checkedValue('impact'),
+      basis: form.elements['basis'].value.trim()
+    };
+  }
+  function fillForm(key) {
+    var r = state.records[key] || null;
+    form.elements['period'].value = r ? r.period : '';
+    form.elements['basis'].value = r ? r.basis : '';
+    setRadio('type', r ? r.type : null);
+    setRadio('l1', r ? r.l1 : null);
+    setRadio('l2', r ? r.l2 : null);
+    setRadio('impact', r ? r.impact : null);
+  }
+  function say(text, tone) {
+    msgEl.textContent = text;
+    msgEl.className = 'cat6-status cat6-js-msg' + (tone ? ' cat6-status--' + tone : '');
+  }
+
+  /* ---------- 渲染 ---------- */
+  function levelChip(key, short) {
+    var L = LEVELS[key];
+    var chip = document.createElement('span');
+    chip.className = 'cat6-chip cat6-chip--' + L.cls;
+    chip.appendChild(document.createTextNode(L.zh + ' '));
+    var en = document.createElement('span');
+    en.className = 'cat6-chip-en';
+    en.textContent = short ? L.code : L.en;
+    chip.appendChild(en);
+    return chip;
+  }
+  function levelText(key) { return key ? LEVELS[key].zh + ' ' + LEVELS[key].en : null; }
+  function setValue(el, text) {
+    el.textContent = text || '未填';
+    el.classList.toggle('cat6-ue-v--empty', !text);
+  }
+  function isStarted(r) {
+    return !!(r && (r.period || r.type || r.l1 || r.l2 || r.impact || r.basis));
+  }
+
+  function renderCard(card) {
+    var key = card.getAttribute('data-scn');
+    var r = state.records[key] || null;
+    var ov = overallOf(r);
+    var imp = r ? r.impact : null;
+
+    var status = card.querySelector('.cat6-js-status');
+    if (ov && imp) { status.textContent = '可能性與影響已評估'; status.className = 'cat6-chip cat6-chip--done cat6-js-status'; }
+    else if (isStarted(r)) { status.textContent = '評估草稿'; status.className = 'cat6-chip cat6-chip--draft cat6-js-status'; }
+    else { status.textContent = '未評估'; status.className = 'cat6-chip cat6-chip--none cat6-js-status'; }
+
+    var lik = card.querySelector('.cat6-js-lik');
+    if (ov) lik.replaceChildren(levelChip(ov, true));
+    else lik.textContent = (r && (r.type || r.l1 || r.l2)) ? '未完成評估' : '未評估';
+
+    var impEl = card.querySelector('.cat6-js-imp');
+    if (imp) impEl.replaceChildren(levelChip(imp, true)); else impEl.textContent = '未評估';
+
+    card.querySelector('.cat6-js-risk').textContent = (ov && imp) ? '規則待設定' : '未評估';
+
+    var ue = card.querySelector('.cat6-js-ue');
+    ue.hidden = !isStarted(r);
+    if (!isStarted(r)) return;
+    var q = function (f) { return ue.querySelector('[data-ue="' + f + '"]'); };
+    setValue(q('period'), r.period);
+    setValue(q('type'), r.type ? TYPES[r.type] : null);
+    setValue(q('l1'), levelText(r.l1));
+    setValue(q('l2'), levelText(r.l2));
+    setValue(q('overall'), ov ? levelText(ov) : (r.type || r.l1 || r.l2 ? '未完成評估' : null));
+    setValue(q('impact'), levelText(r.impact));
+    setValue(q('basis'), r.basis);
+    var t = r.updatedAt ? new Date(r.updatedAt) : null;
+    q('updatedAt').textContent = (t && !isNaN(t)) ? '最後更新：' + t.toLocaleString('zh-TW', { hour12: false }) : '';
+  }
+
+  function renderStats() {
+    var l = 0, i = 0;
+    SCENARIO_KEYS.forEach(function (k) {
+      var r = state.records[k];
+      if (overallOf(r)) l++;
+      if (r && r.impact) i++;
+    });
+    root.querySelector('.cat6-js-lcount').textContent = String(l);
+    root.querySelector('.cat6-js-icount').textContent = String(i);
+  }
+
+  function render() {
+    Array.prototype.forEach.call(root.querySelectorAll('.cat6-scn[data-scn]'), renderCard);
+    renderStats();
+    delBtn.disabled = !state.records[sel.value];
+  }
+
+  /* ---------- 事件 ---------- */
+  sel.addEventListener('change', function () {
+    fillForm(sel.value);
+    render();
+    if (!sel.value) return;
+    say(state.records[sel.value] ? '已載入情境 ' + sel.value + ' 的評估紀錄，可修改後再儲存。' : '情境 ' + sel.value + ' 尚無紀錄，填寫後按「儲存到情境分析」。', null);
+  });
+
+  Array.prototype.forEach.call(form.querySelectorAll('input[name="type"]'), function (el) {
+    el.addEventListener('change', function () {
+      if (checkedValue('l1')) {
+        setRadio('l1', null);
+        say('事件類型已變更，已清空「事件發起／發生可能性」，請依新準則重新選擇。', 'warn');
+      }
+    });
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var key = sel.value;
+    if (SCENARIO_KEYS.indexOf(key) === -1) {
+      say('請先在步驟 1 選擇要記錄的情境。', 'error');
+      sel.focus();
+      return;
+    }
+    var r = readForm();
+    r.updatedAt = new Date().toISOString();
+    state.records[key] = r;
+    var saved = persist();
+    render();
+    var complete = overallOf(r) && r.impact;
+    var tail = complete ? '。' : '（草稿，尚有未填項目）。';
+    if (saved) say('已儲存到情境 ' + key + tail, 'ok');
+    else say('已記錄到情境 ' + key + '，但無法寫入瀏覽器儲存空間，重新整理後會消失' + tail, 'warn');
+  });
+
+  form.addEventListener('reset', function () {
+    window.setTimeout(function () {
+      render();
+      say('已清除本次選擇，已儲存的紀錄不受影響。', null);
+    }, 0);
+  });
+
+  delBtn.addEventListener('click', function () {
+    var key = sel.value;
+    if (!state.records[key]) return;
+    if (!window.confirm('確定刪除情境 ' + key + ' 的評估紀錄？原始情境資料不受影響。')) return;
+    delete state.records[key];
+    var saved = persist();
+    fillForm(key);
+    render();
+    say(saved ? '已刪除情境 ' + key + ' 的評估紀錄。' : '已從頁面刪除，但無法更新瀏覽器儲存空間。', saved ? 'ok' : 'warn');
+  });
+
+  Array.prototype.forEach.call(root.querySelectorAll('.cat6-js-edit'), function (a) {
+    a.addEventListener('click', function () {
+      var key = a.closest('.cat6-scn').getAttribute('data-scn');
+      sel.value = key;
+      fillForm(key);
+      render();
+      say(state.records[key] ? '已載入情境 ' + key + ' 的評估紀錄，可修改後再儲存。' : '正在評估情境 ' + key + '。', null);
+      window.setTimeout(function () { sel.focus({ preventScroll: true }); }, 0);
+    });
+  });
+
+  /* ---------- 啟動 ---------- */
+  var loaded = load();
+  render();
+  if (!loaded) say('無法讀取瀏覽器儲存空間，本次評估仍可操作，但可能無法保存。', 'warn');
+})();
+</script>
 </body>
 </html>
