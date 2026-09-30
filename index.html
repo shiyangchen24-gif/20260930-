@@ -1,1 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CAT.6 Cybersecurity｜資訊安全風險管理評估（Prototype）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   1. Design tokens（掛在 .cat6，不用 :root，不污染宿主頁）
+   ========================================================= */
+.cat6 {
+  --bg: #030304; --surface: #0F1115; --surface-2: #151922;
+  --text: #FFFFFF; --muted: #94A3B8; --border: #1E293B;
+  --primary: #F7931A; --secondary: #EA580C; --gold: #FFD600;
+  --brand-grad: linear-gradient(100deg, #EA580C 0%, #F7931A 45%, #FFD600 100%);
+  /* 評估等級語意色：與品牌橘金刻意分開 */
+  --lv-vl: #7C8DA6; --lv-l: #4FB8A8; --lv-m: #A98BF5; --lv-h: #F2709C; --lv-vh: #FF4D4F;
+  --f-zh: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-head: "Space Grotesk", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-body: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --r-card: 14px; --r-pill: 999px;
+  --focus: 0 0 0 3px #030304, 0 0 0 5px #FFD600;
+  --dur: 180ms;
+}
 
+/* =========================================================
+   2. 外框（不重設 body；本元件自帶背景與間距）
+   ========================================================= */
+.cat6 {
+  box-sizing: border-box;
+  min-height: calc(100vh - 16px);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  border-radius: 16px;
+  overflow: clip;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(40rem 24rem at 90% -5%, rgba(247,147,26,.16), transparent 65%),
+    radial-gradient(28rem 20rem at -10% 40%, rgba(234,88,12,.07), transparent 70%),
+    linear-gradient(rgba(30,41,59,.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30,41,59,.32) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.cat6-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.cat6-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cat6-wrap { box-sizing: border-box; width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+
+/* =========================================================
+   3. 頂部導覽（玻璃效果只用在這裡）
+   ========================================================= */
+.cat6-top {
+  position: sticky; top: 0; z-index: 10;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgba(3,3,4,.72);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.cat6-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; flex-wrap: wrap; }
+.cat6-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-height: 44px; border-radius: 10px; }
+.cat6-brand-mark { width: 36px; height: 36px; flex: none; }
+.cat6-brand-name { font-family: var(--f-head); font-weight: 700; font-size: 1.05rem; letter-spacing: .01em; }
+.cat6-brand-dot { color: var(--primary); }
+.cat6-navtoggle { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cat6-navbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
+  min-height: 44px; min-width: 44px; padding: 0 14px; box-sizing: border-box;
+  border: 1px solid var(--border); border-radius: var(--r-pill);
+  color: var(--text); font-family: var(--f-zh); font-size: .95rem; cursor: pointer;
+  background: var(--surface);
+}
+.cat6-navbtn-bars { width: 16px; height: 10px; border-top: 2px solid currentColor; border-bottom: 2px solid currentColor; position: relative; }
+.cat6-navtoggle:focus-visible + .cat6-navbtn { box-shadow: var(--focus); }
+.cat6-navwrap { flex-basis: 100%; }
+.cat6-navlist { display: none; width: 100%; flex-direction: column; gap: 4px; padding: 0 0 12px; margin: 0; list-style: none; }
+.cat6-top:has(.cat6-navtoggle:checked) .cat6-navlist { display: flex; }
+.cat6-navlink {
+  display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 10px;
+  color: var(--muted); text-decoration: none; font-family: var(--f-zh); font-size: .95rem;
+  transition: color var(--dur), background-color var(--dur);
+}
+.cat6-navlink:hover { color: var(--text); background: var(--surface); }
+.cat6-navlink:focus-visible, .cat6-brand:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* =========================================================
+   4. 共用元件
+   ========================================================= */
+.cat6-section { padding: 56px 0 8px; scroll-margin-top: 72px; }
+.cat6-h2 { font-family: var(--f-head); font-size: 1.6rem; line-height: 1.25; font-weight: 700; margin: 0 0 8px; }
+.cat6-lead { color: var(--muted); margin: 0 0 24px; max-width: 70ch; }
+.cat6-card {
+  box-sizing: border-box; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-card); padding: 20px;
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+.cat6-card:hover { border-color: rgba(247,147,26,.45); box-shadow: 0 0 0 1px rgba(247,147,26,.12), 0 8px 32px -12px rgba(247,147,26,.25); }
+.cat6-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 24px; box-sizing: border-box;
+  border-radius: var(--r-pill); font-family: var(--f-zh); font-weight: 700; font-size: 1rem;
+  text-decoration: none; cursor: pointer; border: 1px solid transparent;
+  transition: box-shadow var(--dur), border-color var(--dur), background-color var(--dur);
+}
+.cat6-btn--primary { background: var(--brand-grad); color: #030304; }
+.cat6-btn--primary:hover { box-shadow: 0 0 24px -4px rgba(247,147,26,.7); }
+.cat6-btn--ghost { background: transparent; color: var(--text); border-color: var(--border); }
+.cat6-btn--ghost:hover { border-color: var(--primary); }
+.cat6-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* 等級標籤：顏色 + 中英文字，不只靠顏色 */
+.cat6-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--r-pill);
+  border: 1px solid currentColor; font-family: var(--f-zh); font-size: .85rem; font-weight: 500; line-height: 1.6; white-space: nowrap;
+}
+.cat6-chip-en { font-family: var(--f-body); opacity: .85; }
+.cat6-chip--vl { color: var(--lv-vl); } .cat6-chip--l { color: var(--lv-l); } .cat6-chip--m { color: var(--lv-m); }
+.cat6-chip--h { color: var(--lv-h); } .cat6-chip--vh { color: var(--lv-vh); }
+.cat6-chip--none { color: var(--muted); border-style: dashed; }
+
+/* 資料來源標籤：原始／整理／待確認／使用者評估 */
+.cat6-tag { display: inline-block; font-family: var(--f-zh); font-size: .75rem; line-height: 1.5; padding: 0 8px; border-radius: 6px; white-space: nowrap; vertical-align: 1px; }
+.cat6-tag--raw { background: #1E293B; color: #CBD5E1; }
+.cat6-tag--derived { border: 1px solid #475569; color: #CBD5E1; }
+.cat6-tag--tbc { border: 1px dashed var(--primary); color: var(--primary); }
+.cat6-tag--user { background: rgba(79,184,168,.15); color: var(--lv-l); }
+
+/* =========================================================
+   5. Hero
+   ========================================================= */
+.cat6-hero { display: grid; grid-template-columns: 1fr; gap: 32px; align-items: center; padding: 48px 0 16px; }
+.cat6-hero-brand { font-family: var(--f-head); font-weight: 700; font-size: 1rem; margin: 0 0 12px; background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cat6-h1 { font-family: var(--f-zh); font-weight: 700; font-size: clamp(2rem, 7vw, 3.4rem); line-height: 1.15; letter-spacing: .02em; margin: 0 0 16px; }
+.cat6-hero-desc { color: var(--muted); font-size: 1.05rem; margin: 0 0 28px; max-width: 42em; }
+.cat6-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.cat6-hero-art { justify-self: center; width: min(100%, 280px); }
+.cat6-hero-svg { display: block; width: 100%; height: auto; }
+.cat6-note { display: flex; gap: 10px; align-items: flex-start; margin: 24px 0 0; padding: 12px 16px; border: 1px dashed #334155; border-radius: 12px; color: var(--muted); font-size: .9rem; }
+
+/* 指標卡 */
+.cat6-stats { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 32px 0 0; padding: 0; list-style: none; }
+.cat6-stat-num { font-family: var(--f-mono); font-weight: 700; font-size: 2.2rem; line-height: 1.1; }
+.cat6-stat-of { color: var(--muted); font-size: 1.2rem; }
+.cat6-stat-label { font-family: var(--f-zh); margin: 6px 0 0; }
+.cat6-stat-sub { color: var(--muted); font-size: .88rem; margin: 2px 0 0; }
+
+/* =========================================================
+   6. 情境卡片
+   ========================================================= */
+.cat6-scns { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.cat6-scn { display: flex; flex-direction: column; gap: 14px; }
+.cat6-scn-head { display: flex; gap: 12px; align-items: flex-start; }
+.cat6-scn-code {
+  flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px;
+  font-family: var(--f-head); font-weight: 700; font-size: 1.2rem; color: #030304; background: var(--brand-grad);
+}
+.cat6-scn-title { font-family: var(--f-zh); font-size: 1.1rem; line-height: 1.45; font-weight: 700; margin: 0; }
+.cat6-scn-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.cat6-alert { margin: 0; padding: 10px 14px; border-radius: 10px; background: rgba(247,147,26,.08); border: 1px solid rgba(247,147,26,.35); font-size: .92rem; color: #FDE2BF; }
+.cat6-alert-title { font-weight: 700; color: var(--primary); }
+.cat6-fields { margin: 0; display: grid; gap: 12px; }
+.cat6-field-row { padding-top: 12px; border-top: 1px solid var(--border); }
+.cat6-dt { font-family: var(--f-zh); font-size: .85rem; color: var(--muted); margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cat6-dd { margin: 0; font-size: .98rem; overflow-wrap: anywhere; }
+.cat6-dd--tbc { color: var(--primary); }
+.cat6-lir { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.cat6-lir-item { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.cat6-lir-k { display: block; font-size: .78rem; color: var(--muted); }
+.cat6-lir-v { display: block; font-size: .88rem; color: var(--muted); font-family: var(--f-zh); }
+.cat6-more { border-top: 1px solid var(--border); }
+.cat6-more-sum {
+  display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer;
+  font-family: var(--f-zh); font-weight: 500; list-style: none; border-radius: 8px;
+}
+.cat6-more-sum::-webkit-details-marker { display: none; }
+.cat6-more-sum::after { content: "+"; font-family: var(--f-mono); color: var(--primary); font-size: 1.2rem; }
+.cat6-more[open] > .cat6-more-sum::after { content: "−"; }
+.cat6-more-sum:focus-visible { outline: none; box-shadow: var(--focus); }
+.cat6-more-body { padding: 0 0 12px; font-size: .95rem; color: #CBD5E1; }
+.cat6-more-p { margin: 0 0 10px; }
+.cat6-list { margin: 0; padding-left: 1.2em; }
+.cat6-list-item { margin: 0 0 6px; }
+.cat6-quote { margin: 6px 0 10px; padding: 8px 12px; border-left: 2px solid #475569; background: var(--surface-2); border-radius: 0 8px 8px 0; }
+
+/* =========================================================
+   7. 評估面板（CSS :has() 驅動，無 JavaScript）
+   ========================================================= */
+.cat6-eval { display: grid; grid-template-columns: 1fr; gap: 20px; margin: 0; }
+.cat6-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.cat6-step { margin: 0; min-width: 0; }
+.cat6-legend { float: left; width: 100%; box-sizing: border-box; display: flex; gap: 10px; align-items: baseline; padding: 0; margin: 0 0 10px; font-family: var(--f-zh); font-weight: 700; }
+.cat6-step-n { font-family: var(--f-mono); font-size: .85rem; color: var(--primary); }
+.cat6-hint, .cat6-opts, .cat6-label, .cat6-result, .cat6-risk-state { clear: both; }
+.cat6-hint { font-size: .85rem; color: var(--muted); margin: -4px 0 10px; }
+.cat6-label { display: block; font-family: var(--f-zh); font-size: .9rem; color: var(--muted); margin: 0 0 6px; }
+.cat6-input {
+  box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; margin: 0 0 12px;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px;
+  font-family: var(--f-zh); font-size: 1rem; line-height: 1.5;
+}
+.cat6-input:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,214,0,.25); }
+.cat6-input--area { min-height: 112px; resize: vertical; }
+
+.cat6-opts { display: flex; flex-direction: column; gap: 6px; }
+.cat6-opts--row { flex-direction: row; flex-wrap: wrap; }
+.cat6-opt {
+  position: relative; display: flex; gap: 10px; align-items: flex-start;
+  min-height: 44px; padding: 10px 12px; box-sizing: border-box;
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer; background: var(--bg);
+  transition: border-color var(--dur), background-color var(--dur);
+}
+.cat6-opts--row > .cat6-opt { flex: 1 1 140px; align-items: center; }
+.cat6-opt:hover { border-color: #334155; }
+.cat6-radio { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.cat6-opt-dot { flex: none; width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; border: 2px solid #475569; box-sizing: border-box; transition: border-color var(--dur), border-width var(--dur); }
+.cat6-opts--row .cat6-opt-dot { margin-top: 0; }
+.cat6-opt-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cat6-opt-name { font-family: var(--f-zh); font-weight: 500; }
+.cat6-opt-en { font-family: var(--f-body); color: var(--muted); font-weight: 400; font-size: .85rem; }
+.cat6-opt-desc { font-size: .85rem; color: var(--muted); line-height: 1.5; }
+.cat6-opt:has(.cat6-radio:checked) { border-color: var(--primary); background: rgba(247,147,26,.07); }
+.cat6-opt:has(.cat6-radio:checked) .cat6-opt-dot { border: 5px solid var(--primary); }
+.cat6-opt:has(.cat6-radio:focus-visible) { box-shadow: var(--focus); }
+
+/* 事件類型未選：第一個可能性輸入顯示「請先選類型」並淡化 */
+.cat6-g2txt, .cat6-g3txt { display: none; }
+.cat6-eval:has(.cat6-type-adv:checked) .cat6-g2txt { display: inline; }
+.cat6-eval:has(.cat6-type-non:checked) .cat6-g3txt { display: inline; }
+.cat6-eval:has(.cat6-type-radio:checked) .cat6-needtype { display: none; }
+.cat6-needtype { color: var(--primary); }
+.cat6-eval:not(:has(.cat6-type-radio:checked)) .cat6-step--l1 .cat6-opts { opacity: .45; }
+
+/* G-5 矩陣 */
+.cat6-tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); -webkit-overflow-scrolling: touch; }
+.cat6-g5 { --row-on: 0; --col-on: 0; --type-on: 0; width: 100%; min-width: 300px; border-collapse: separate; border-spacing: 3px; font-size: .82rem; }
+.cat6-eval:has(.cat6-type-radio:checked) .cat6-g5 { --type-on: 1; }
+.cat6-g5-cap { caption-side: top; text-align: left; padding: 12px 12px 4px; color: var(--muted); font-size: .82rem; }
+.cat6-g5-corner { font-family: var(--f-zh); color: var(--muted); font-weight: 400; font-size: .72rem; text-align: left; padding: 4px; line-height: 1.35; }
+.cat6-g5-colh, .cat6-g5-rowh {
+  --axis: max(var(--row-on), var(--col-on));
+  font-family: var(--f-zh); font-weight: 500; color: var(--muted); padding: 6px 4px; border-radius: 6px;
+  background: rgba(247,147,26, calc(var(--axis) * .2)); line-height: 1.3;
+}
+.cat6-g5-rowh { text-align: left; white-space: nowrap; }
+.cat6-g5-cell {
+  --axis: max(var(--row-on), var(--col-on));
+  --hit: calc(var(--row-on) * var(--col-on) * var(--type-on));
+  height: 48px; text-align: center; border-radius: 6px; font-family: var(--f-zh); font-weight: 500; line-height: 1.2;
+  box-shadow: inset 0 0 0 calc(var(--hit) * 3px) #FFFFFF, inset 0 0 0 calc(var(--axis) * 1px) rgba(247,147,26,.9);
+  transition: box-shadow var(--dur);
+}
+.cat6-g5-en { display: block; font-family: var(--f-mono); font-size: .66rem; opacity: .8; }
+.cat6-lvbg-vl { background: color-mix(in srgb, var(--lv-vl) 24%, var(--surface)); }
+.cat6-lvbg-l  { background: color-mix(in srgb, var(--lv-l) 24%, var(--surface)); }
+.cat6-lvbg-m  { background: color-mix(in srgb, var(--lv-m) 24%, var(--surface)); }
+.cat6-lvbg-h  { background: color-mix(in srgb, var(--lv-h) 26%, var(--surface)); }
+.cat6-lvbg-vh { background: color-mix(in srgb, var(--lv-vh) 30%, var(--surface)); }
+
+/* 列（事件發生可能性）與欄（造成影響可能性）高亮 */
+.cat6-eval:has(.cat6-l1-vh:checked) .cat6-g5-r-vh,
+.cat6-eval:has(.cat6-l1-h:checked)  .cat6-g5-r-h,
+.cat6-eval:has(.cat6-l1-m:checked)  .cat6-g5-r-m,
+.cat6-eval:has(.cat6-l1-l:checked)  .cat6-g5-r-l,
+.cat6-eval:has(.cat6-l1-vl:checked) .cat6-g5-r-vl { --row-on: 1; }
+.cat6-eval:has(.cat6-l2-vl:checked) .cat6-g5-c-vl,
+.cat6-eval:has(.cat6-l2-l:checked)  .cat6-g5-c-l,
+.cat6-eval:has(.cat6-l2-m:checked)  .cat6-g5-c-m,
+.cat6-eval:has(.cat6-l2-h:checked)  .cat6-g5-c-h,
+.cat6-eval:has(.cat6-l2-vh:checked) .cat6-g5-c-vh { --col-on: 1; }
+
+/* 結果區 */
+.cat6-result { display: flex; flex-direction: column; gap: 6px; }
+.cat6-result-k { font-family: var(--f-zh); font-size: .85rem; color: var(--muted); margin: 0; }
+.cat6-result-v { margin: 0; min-height: 32px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.cat6-res, .cat6-impres, .cat6-target, .cat6-typeres { display: none; }
+.cat6-pending { color: var(--muted); font-family: var(--f-zh); font-size: .95rem; }
+
+/* G-5 查表：25 個交點依規格逐一列出（不使用乘法或平均） */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1:checked):has(.cat6-l2:checked) .cat6-res-pending { display: none; }
+/* → Very Low */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-l:checked):has(.cat6-l2-vl:checked) .cat6-res--vl,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vl:checked):has(.cat6-l2-vl:checked) .cat6-res--vl,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vl:checked):has(.cat6-l2-l:checked) .cat6-res--vl { display: inline-flex; }
+/* → Low */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vh:checked):has(.cat6-l2-vl:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-h:checked):has(.cat6-l2-vl:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-m:checked):has(.cat6-l2-vl:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-m:checked):has(.cat6-l2-l:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-l:checked):has(.cat6-l2-l:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-l:checked):has(.cat6-l2-m:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vl:checked):has(.cat6-l2-m:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vl:checked):has(.cat6-l2-h:checked) .cat6-res--l,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vl:checked):has(.cat6-l2-vh:checked) .cat6-res--l { display: inline-flex; }
+/* → Moderate */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vh:checked):has(.cat6-l2-l:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-h:checked):has(.cat6-l2-l:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-h:checked):has(.cat6-l2-m:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-m:checked):has(.cat6-l2-m:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-m:checked):has(.cat6-l2-h:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-l:checked):has(.cat6-l2-h:checked) .cat6-res--m,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-l:checked):has(.cat6-l2-vh:checked) .cat6-res--m { display: inline-flex; }
+/* → High */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vh:checked):has(.cat6-l2-m:checked) .cat6-res--h,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-h:checked):has(.cat6-l2-h:checked) .cat6-res--h,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-m:checked):has(.cat6-l2-vh:checked) .cat6-res--h { display: inline-flex; }
+/* → Very High */
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vh:checked):has(.cat6-l2-h:checked) .cat6-res--vh,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-vh:checked):has(.cat6-l2-vh:checked) .cat6-res--vh,
+.cat6-eval:has(.cat6-type-radio:checked):has(.cat6-l1-h:checked):has(.cat6-l2-vh:checked) .cat6-res--vh { display: inline-flex; }
+
+/* Impact 與 Risk 配對顯示 */
+.cat6-eval:has(.cat6-imp:checked) .cat6-imp-pending { display: none; }
+.cat6-eval:has(.cat6-imp-vl:checked) .cat6-impres--vl,
+.cat6-eval:has(.cat6-imp-l:checked)  .cat6-impres--l,
+.cat6-eval:has(.cat6-imp-m:checked)  .cat6-impres--m,
+.cat6-eval:has(.cat6-imp-h:checked)  .cat6-impres--h,
+.cat6-eval:has(.cat6-imp-vh:checked) .cat6-impres--vh { display: inline-flex; }
+/* 評估對象與事件類型 */
+.cat6-eval:has(.cat6-scnopt-a:checked) .cat6-target--a,
+.cat6-eval:has(.cat6-scnopt-b:checked) .cat6-target--b,
+.cat6-eval:has(.cat6-scnopt-c:checked) .cat6-target--c { display: inline; }
+.cat6-eval:has(.cat6-scnopt-a:checked) .cat6-target-pending,
+.cat6-eval:has(.cat6-scnopt-b:checked) .cat6-target-pending,
+.cat6-eval:has(.cat6-scnopt-c:checked) .cat6-target-pending { display: none; }
+.cat6-eval:has(.cat6-type-adv:checked) .cat6-typeres--adv,
+.cat6-eval:has(.cat6-type-non:checked) .cat6-typeres--non { display: inline; }
+.cat6-eval:has(.cat6-type-radio:checked) .cat6-type-pending { display: none; }
+
+.cat6-risk { border: 1px dashed #475569; border-radius: 12px; padding: 14px; background: var(--bg); }
+.cat6-risk-title { font-family: var(--f-zh); font-weight: 700; margin: 0 0 6px; }
+.cat6-risk-state { color: var(--primary); font-family: var(--f-zh); font-weight: 700; margin: 0 0 8px; }
+.cat6-risk-pair { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; margin: 8px 0 0; font-size: .9rem; }
+.cat6-risk-pair-k { color: var(--muted); font-family: var(--f-zh); }
+.cat6-risk-pair-v { margin: 0; }
+.cat6-small { font-size: .85rem; color: var(--muted); margin: 0; }
+.cat6-formbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+/* =========================================================
+   8. 評分準則（radio 分頁，CSS 切換）
+   ========================================================= */
+.cat6-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 12px; margin: 0 0 8px; }
+.cat6-tab {
+  position: relative; flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+  border: 1px solid var(--border); border-radius: var(--r-pill); cursor: pointer; font-family: var(--f-zh); font-size: .92rem; color: var(--muted);
+  background: var(--surface); transition: color var(--dur), border-color var(--dur);
+}
+.cat6-tab-code { font-family: var(--f-mono); margin-right: 6px; }
+.cat6-tab:has(.cat6-radio:checked) { color: #030304; background: var(--brand-grad); border-color: transparent; font-weight: 700; }
+.cat6-tab:has(.cat6-radio:focus-visible) { box-shadow: var(--focus); }
+.cat6-panel { display: none; }
+.cat6-criteria:has(.cat6-tab-g2:checked) .cat6-panel--g2,
+.cat6-criteria:has(.cat6-tab-g3:checked) .cat6-panel--g3,
+.cat6-criteria:has(.cat6-tab-g4:checked) .cat6-panel--g4,
+.cat6-criteria:has(.cat6-tab-g5:checked) .cat6-panel--g5,
+.cat6-criteria:has(.cat6-tab-imp:checked) .cat6-panel--imp { display: block; }
+.cat6-panel-title { font-family: var(--f-zh); font-size: 1.1rem; margin: 0 0 4px; }
+.cat6-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .92rem; }
+.cat6-table th, .cat6-table td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.cat6-table th { font-family: var(--f-zh); color: var(--muted); font-weight: 500; background: var(--surface-2); position: sticky; top: 0; }
+.cat6-table--compact { min-width: 280px; }
+.cat6-inlink { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; color: var(--primary); border-radius: 6px; }
+.cat6-inlink:focus-visible { outline: none; box-shadow: var(--focus); }
+.cat6-num { font-family: var(--f-mono); white-space: nowrap; }
+.cat6-criteria-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+
+/* =========================================================
+   9. 頁尾
+   ========================================================= */
+.cat6-foot { margin: 64px 0 0; padding: 32px 0 40px; border-top: 1px solid var(--border); color: var(--muted); font-size: .88rem; }
+.cat6-foot-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.cat6-foot-h { font-family: var(--f-zh); color: var(--text); font-size: .95rem; margin: 0 0 6px; }
+.cat6-foot-p { margin: 0 0 6px; }
+
+/* =========================================================
+   10. 響應式：320 起單欄 → 640 平板兩欄 → 1024 桌面三欄
+   ========================================================= */
+@media (min-width: 640px) {
+  .cat6-wrap { padding: 0 24px; }
+  .cat6-navbtn, .cat6-navtoggle { display: none; }
+  .cat6-navwrap { flex-basis: auto; }
+  .cat6-navlist { display: flex; flex-direction: row; width: auto; padding: 0; gap: 2px; }
+  .cat6-hero { grid-template-columns: 1.4fr 1fr; }
+  .cat6-stats, .cat6-scns, .cat6-eval, .cat6-foot-grid, .cat6-criteria-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cat6-stat--wide, .cat6-scn--wide, .cat6-col--result { grid-column: 1 / -1; }
+  .cat6-section { padding-top: 72px; }
+}
+@media (min-width: 1024px) {
+  .cat6-wrap { padding: 0 32px; }
+  .cat6-hero { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-top: 72px; }
+  .cat6-hero-text { grid-column: span 2; }
+  .cat6-stats, .cat6-scns, .cat6-foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cat6-eval { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  .cat6-stat--wide, .cat6-scn--wide, .cat6-col--result { grid-column: auto; }
+  .cat6-col--matrix { position: sticky; top: 88px; }
+  .cat6-criteria-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+}
+
+@media (max-width: 399px) {
+  .cat6-navbtn-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cat6-navbtn { padding: 0 12px; }
+  .cat6-brand-name { font-size: .92rem; }
+  .cat6-brand-mark { width: 30px; height: 30px; }
+  .cat6-topbar { gap: 8px; }
+}
+
+/* 動作偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .cat6-card, .cat6-btn, .cat6-opt, .cat6-opt-dot, .cat6-tab, .cat6-navlink, .cat6-g5-cell { transition: none; }
+}
+
+/* 列印：白底黑字、隱藏操作 */
+@media print {
+  .cat6 { background: #FFFFFF; color: #000000; min-height: 0; border-radius: 0; }
+  .cat6-top, .cat6-cta, .cat6-formbar, .cat6-tabs, .cat6-hero-art { display: none; }
+  .cat6-card, .cat6-tablewrap { background: #FFFFFF; border-color: #999999; box-shadow: none; break-inside: avoid; }
+  .cat6-panel { display: block; }
+  .cat6-lead, .cat6-dt, .cat6-foot, .cat6-opt-desc { color: #333333; }
+}
+</style>
+</head>
+<body>
+<div class="cat6" id="top">
+
+  <!-- 共用 SVG 定義：貓頭節點與品牌漸層 -->
+  <svg class="cat6-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="cat6-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#EA580C"/><stop offset=".5" stop-color="#F7931A"/><stop offset="1" stop-color="#FFD600"/>
+      </linearGradient>
+      <symbol id="cat6-cathead" viewBox="-7 -6 14 13" overflow="visible">
+        <path d="M-6 -5 L-6 3 Q-6 6 -3 6 L3 6 Q6 6 6 3 L6 -5 L2.4 -2 L-2.4 -2 Z" fill="#0F1115" stroke="url(#cat6-grad)" stroke-width="1.3" stroke-linejoin="round"/>
+        <circle cx="-2.2" cy="1.6" r=".9" fill="#FFD600"/><circle cx="2.2" cy="1.6" r=".9" fill="#FFD600"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- 頂部導覽 -->
+  <header class="cat6-top">
+    <div class="cat6-wrap cat6-topbar">
+      <a class="cat6-brand" href="#top" aria-label="CAT.6 Cybersecurity 回到頂端">
+        <svg class="cat6-brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <polygon points="24,8 37.9,16 37.9,32 24,40 10.1,32 10.1,16" fill="none" stroke="#1E293B" stroke-width="1.2"/>
+          <use href="#cat6-cathead" x="18" y="2" width="12" height="11"/>
+          <use href="#cat6-cathead" x="31.9" y="10" width="12" height="11"/>
+          <use href="#cat6-cathead" x="31.9" y="26" width="12" height="11"/>
+          <use href="#cat6-cathead" x="18" y="34" width="12" height="11"/>
+          <use href="#cat6-cathead" x="4.1" y="26" width="12" height="11"/>
+          <use href="#cat6-cathead" x="4.1" y="10" width="12" height="11"/>
+        </svg>
+        <span class="cat6-brand-name">CAT<span class="cat6-brand-dot">.</span>6 Cybersecurity</span>
+      </a>
+      <input class="cat6-navtoggle" type="checkbox" id="cat6-nav" aria-controls="cat6-navlist">
+      <label class="cat6-navbtn" for="cat6-nav"><span class="cat6-navbtn-bars" aria-hidden="true"></span><span class="cat6-navbtn-text">選單</span></label>
+      <nav aria-label="主要導覽" class="cat6-navwrap">
+        <ul class="cat6-navlist" id="cat6-navlist">
+          <li><a class="cat6-navlink" href="#overview">總覽</a></li>
+          <li><a class="cat6-navlink" href="#scenarios">情境分析</a></li>
+          <li><a class="cat6-navlink" href="#assess">評估面板</a></li>
+          <li><a class="cat6-navlink" href="#criteria">評分準則</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="cat6-wrap">
+
+    <!-- 總覽 -->
+    <section class="cat6-hero" id="overview" aria-labelledby="cat6-title">
+      <div class="cat6-hero-text">
+        <p class="cat6-hero-brand">CAT.6 Cybersecurity</p>
+        <h1 class="cat6-h1" id="cat6-title">資訊安全風險管理評估</h1>
+        <p class="cat6-hero-desc">以三個威脅情境為起點，依提供之 NIST 準則判定 Likelihood 與 Impact，並對照 G-5 整體可能性矩陣。適合課堂小組報告，也能現場試填。</p>
+        <div class="cat6-cta">
+          <a class="cat6-btn cat6-btn--primary" href="#assess">開始評估</a>
+          <a class="cat6-btn cat6-btn--ghost" href="#criteria">查看評分準則</a>
+        </div>
+      </div>
+      <div class="cat6-hero-art">
+        <svg class="cat6-hero-svg" viewBox="0 0 240 240" role="img" aria-label="六隻貓咪以網路節點相連的品牌圖示">
+          <g fill="none" stroke="#1E293B" stroke-width="1">
+            <polygon points="120,30 197.9,75 197.9,165 120,210 42.1,165 42.1,75"/>
+            <line x1="120" y1="30" x2="120" y2="210"/><line x1="42.1" y1="75" x2="197.9" y2="165"/><line x1="197.9" y1="75" x2="42.1" y2="165"/>
+          </g>
+          <circle cx="120" cy="120" r="22" fill="#030304" stroke="url(#cat6-grad)" stroke-width="1.5"/>
+          <text x="120" y="127" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700" fill="#FFD600">.6</text>
+          <use href="#cat6-cathead" x="100" y="10" width="40" height="37"/>
+          <use href="#cat6-cathead" x="177.9" y="55" width="40" height="37"/>
+          <use href="#cat6-cathead" x="177.9" y="145" width="40" height="37"/>
+          <use href="#cat6-cathead" x="100" y="190" width="40" height="37"/>
+          <use href="#cat6-cathead" x="22.1" y="145" width="40" height="37"/>
+          <use href="#cat6-cathead" x="22.1" y="55" width="40" height="37"/>
+        </svg>
+      </div>
+    </section>
+
+    <ul class="cat6-stats" aria-label="評估進度（依初始資料）">
+      <li class="cat6-card cat6-stat">
+        <div class="cat6-stat-num">3</div>
+        <p class="cat6-stat-label">情境總數</p>
+        <p class="cat6-stat-sub">A 破解軟體、B 更新延後、C 釣魚匯款</p>
+      </li>
+      <li class="cat6-card cat6-stat">
+        <div class="cat6-stat-num">0<span class="cat6-stat-of"> / 3</span></div>
+        <p class="cat6-stat-label">已完成可能性評估</p>
+        <p class="cat6-stat-sub">影響程度評估：0 / 3</p>
+      </li>
+      <li class="cat6-card cat6-stat cat6-stat--wide">
+        <div class="cat6-stat-num">3<span class="cat6-stat-of"> / 3</span></div>
+        <p class="cat6-stat-label">含待確認事項的情境</p>
+        <p class="cat6-stat-sub">評估前建議先釐清各情境的待確認項</p>
+      </li>
+    </ul>
+    <p class="cat6-note"><span class="cat6-tag cat6-tag--tbc">原型</span><span>此為靜態原型：數字依三筆初始資料呈現，評估面板可即時操作，但不保存資料。儲存、匯出與新增情境將在加入 JavaScript 後實作。</span></p>
+
+    <!-- 情境分析 -->
+    <section class="cat6-section" id="scenarios" aria-labelledby="cat6-scn-h">
+      <h2 class="cat6-h2" id="cat6-scn-h">情境分析</h2>
+      <p class="cat6-lead">每張卡片保留七個主欄位。標籤區分資料來源：<span class="cat6-tag cat6-tag--raw">原始資料</span> <span class="cat6-tag cat6-tag--derived">整理／推論</span> <span class="cat6-tag cat6-tag--tbc">待確認</span> <span class="cat6-tag cat6-tag--user">使用者評估</span></p>
+
+      <div class="cat6-scns">
+        <!-- A -->
+        <article class="cat6-card cat6-scn" aria-labelledby="cat6-a-t">
+          <div class="cat6-scn-head">
+            <span class="cat6-scn-code" aria-hidden="true">A</span>
+            <h3 class="cat6-scn-title" id="cat6-a-t">下載免費破解包，導致木馬入侵、潛伏</h3>
+          </div>
+          <div class="cat6-scn-badges">
+            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none">待確認 2 項</span>
+          </div>
+          <p class="cat6-alert"><span class="cat6-alert-title">資料品質提示：</span>原始弱點欄描述停電與供電備援，與破解軟體情境不符，疑似誤植。原文保留於來源紀錄。</p>
+          <dl class="cat6-fields">
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Sources 威脅來源 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">外源程式碼／人員無資安危機意識</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Type 威脅類型 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">木馬</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Events 威脅事件 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">美玲因貪小便宜下載來源不明的「破解版」，種下了資安破口的種子。</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--tbc">待確認</span></dt><dd class="cat6-dd cat6-dd--tbc">待確認：原始內容與情境不符</dd></div>
+            <div class="cat6-field-row">
+              <dl class="cat6-lir">
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+              </dl>
+            </div>
+          </dl>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">來源紀錄與整理建議</summary>
+            <div class="cat6-more-body">
+              <p class="cat6-more-p"><span class="cat6-tag cat6-tag--raw">原始資料</span> 弱點欄原文：</p>
+              <p class="cat6-quote">題目可確認停電會影響現場設施；但未提供 UPS、發電機、雙路供電等資訊，不可自行認定缺乏備援</p>
+              <p class="cat6-more-p"><span class="cat6-tag cat6-tag--derived">整理建議，待確認</span> 下載來源不明軟體、軟體來源查核不足及人員資安意識不足。不能據此認定未部署端點防護或沒有權限控管。</p>
+            </div>
+          </details>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">待確認事項（2）</summary>
+            <div class="cat6-more-body">
+              <ul class="cat6-list">
+                <li class="cat6-list-item">弱點欄疑似誤植，需以原始題目核對正確內容。</li>
+                <li class="cat6-list-item">事件分類建議為敵對事件，尚待評估者確認。</li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <!-- B -->
+        <article class="cat6-card cat6-scn" aria-labelledby="cat6-b-t">
+          <div class="cat6-scn-head">
+            <span class="cat6-scn-code" aria-hidden="true">B</span>
+            <h3 class="cat6-scn-title" id="cat6-b-t">未更新 Microsoft Defender／系統更新延後</h3>
+          </div>
+          <div class="cat6-scn-badges">
+            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none">待確認 3 項</span>
+          </div>
+          <p class="cat6-alert"><span class="cat6-alert-title">資料品質提示：</span>標題提及 Defender，事件描述卻是作業系統安全性更新；須確認延後的是病毒碼、防護引擎還是系統更新。</p>
+          <dl class="cat6-fields">
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Sources 威脅來源 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">人員無資安危機意識／資訊安全防護軟體漏洞</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Type 威脅類型 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">程式漏洞攻擊</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Events 威脅事件 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">認為系統重啟太浪費時間，當視窗跳出作業系統安全性更新通知時，按下「稍後提醒」，導致該台筆電的防禦狀態停留在半年前。</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--derived">整理／推論</span></dt><dd class="cat6-dd">更新延後，可能降低防護有效性（待確認更新類型及實際狀態）</dd></div>
+            <div class="cat6-field-row">
+              <dl class="cat6-lir">
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+              </dl>
+            </div>
+          </dl>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">來源紀錄</summary>
+            <div class="cat6-more-body">
+              <p class="cat6-more-p"><span class="cat6-tag cat6-tag--raw">原始資料</span> 弱點欄原文：</p>
+              <p class="cat6-quote">未定期更新防毒軟體，導致防毒軟體失能，無法有效防止惡意程式入侵。</p>
+              <p class="cat6-more-p">「失能」為原始描述，未經驗證為完全失效。</p>
+            </div>
+          </details>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">待確認事項（3）</summary>
+            <div class="cat6-more-body">
+              <ul class="cat6-list">
+                <li class="cat6-list-item">延後的更新類型：病毒碼、防護引擎或作業系統安全更新。</li>
+                <li class="cat6-list-item">防護是否實際「失能」，或僅為有效性下降。</li>
+                <li class="cat6-list-item">事件分類：評估攻擊者利用漏洞選敵對事件；評估維護疏失本身需另定義事件。未更新不等於已遭攻擊。</li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <!-- C -->
+        <article class="cat6-card cat6-scn cat6-scn--wide" aria-labelledby="cat6-c-t">
+          <div class="cat6-scn-head">
+            <span class="cat6-scn-code" aria-hidden="true">C</span>
+            <h3 class="cat6-scn-title" id="cat6-c-t">釣魚郵件與匯款查核不足，損失新臺幣 300 萬元</h3>
+          </div>
+          <div class="cat6-scn-badges">
+            <span class="cat6-chip cat6-chip--none">未評估</span>
+            <span class="cat6-chip cat6-chip--none">待確認 3 項</span>
+          </div>
+          <dl class="cat6-fields">
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Sources 威脅來源 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">釣魚電子郵件</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Type 威脅類型 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">電子郵件社交工程</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Threat Events 威脅事件 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">假扮長期合作夥伴／廠商來信通知，因無二次查核，導致相關人員匯款 300 萬元至指定帳戶。</dd></div>
+            <div class="cat6-field-row"><dt class="cat6-dt">Vulnerabilities 弱點／促成條件 <span class="cat6-tag cat6-tag--raw">原始資料</span></dt><dd class="cat6-dd">人員缺乏資安意識及防範社交工程警覺性，未仔細辨識寄件者網域或信件內容異常；內部缺乏大額匯款前雙重確認（Double Check）的財務內控機制。</dd></div>
+            <div class="cat6-field-row">
+              <dl class="cat6-lir">
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Likelihood</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Impact</dt><dd class="cat6-lir-v">未評估</dd></div>
+                <div class="cat6-lir-item"><dt class="cat6-lir-k">Risk</dt><dd class="cat6-lir-v">未評估</dd></div>
+              </dl>
+            </div>
+          </dl>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">分類整理建議</summary>
+            <div class="cat6-more-body">
+              <p class="cat6-more-p"><span class="cat6-tag cat6-tag--derived">整理／推論</span> 威脅行為者為冒充合作廠商的詐騙者；釣魚郵件為攻擊媒介。原始威脅來源仍保留。</p>
+            </div>
+          </details>
+          <details class="cat6-more">
+            <summary class="cat6-more-sum">待確認事項（3）</summary>
+            <div class="cat6-more-body">
+              <ul class="cat6-list">
+                <li class="cat6-list-item">事件分類建議為敵對事件，尚待確認。</li>
+                <li class="cat6-list-item">300 萬元是情境損失，不直接等於 High；需依組織承受能力及 Impact 準則判定。</li>
+                <li class="cat6-list-item">事件已發生不等於未來一年再發生的可能性為 Very High；請先填寫評估期間與範圍。</li>
+              </ul>
+            </div>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <!-- 評估面板 -->
+    <section class="cat6-section" id="assess" aria-labelledby="cat6-eval-h">
+      <h2 class="cat6-h2" id="cat6-eval-h">評估面板</h2>
+      <p class="cat6-lead">依序選擇，右側矩陣會標出目前的列、欄與交點。三項輸入都選好才會顯示整體可能性。</p>
+
+      <form class="cat6-eval" aria-label="風險評估表單">
+        <button class="cat6-sr" type="submit" disabled tabindex="-1" aria-hidden="true">停用送出</button>
+        <!-- 欄 1：輸入 -->
+        <div class="cat6-col">
+          <fieldset class="cat6-step cat6-card">
+            <legend class="cat6-legend"><span class="cat6-step-n">1</span>確認情境與期間</legend>
+            <label class="cat6-label" for="cat6-scn-sel">評估情境</label>
+            <select class="cat6-input" id="cat6-scn-sel" name="scenario">
+              <option class="cat6-scnopt-none" value="" selected>請選擇情境</option>
+              <option class="cat6-scnopt-a" value="A">A｜下載破解包導致木馬入侵</option>
+              <option class="cat6-scnopt-b" value="B">B｜更新延後</option>
+              <option class="cat6-scnopt-c" value="C">C｜釣魚郵件與匯款查核不足</option>
+            </select>
+            <label class="cat6-label" for="cat6-period">評估期間／範圍</label>
+            <input class="cat6-input" id="cat6-period" name="period" type="text" placeholder="例如：未來 12 個月，財務部門">
+          </fieldset>
+
+          <fieldset class="cat6-step cat6-card">
+            <legend class="cat6-legend"><span class="cat6-step-n">2</span>事件類型</legend>
+            <div class="cat6-opts cat6-opts--row">
+              <label class="cat6-opt"><input class="cat6-radio cat6-type-radio cat6-type-adv" type="radio" name="type" value="adversarial"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">敵對事件 <span class="cat6-opt-en">G-2</span></span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-type-radio cat6-type-non" type="radio" name="type" value="non-adversarial"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">非敵對事件 <span class="cat6-opt-en">G-3</span></span></span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="cat6-step cat6-step--l1 cat6-card">
+            <legend class="cat6-legend"><span class="cat6-step-n">3</span>事件發起／發生可能性</legend>
+            <p class="cat6-hint"><span class="cat6-needtype">請先選擇事件類型，才能套用對應準則。</span><span class="cat6-g2txt">套用 G-2 敵對事件準則</span><span class="cat6-g3txt">套用 G-3 非敵對事件準則</span></p>
+            <div class="cat6-opts">
+              <label class="cat6-opt"><input class="cat6-radio cat6-l1 cat6-l1-vh" type="radio" name="l1" value="VH"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極高 <span class="cat6-opt-en">Very High</span></span><span class="cat6-opt-desc"><span class="cat6-g2txt">攻擊者幾乎確定會發起事件</span><span class="cat6-g3txt">幾乎確定發生，或 &gt;100 次／年</span></span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l1 cat6-l1-h" type="radio" name="l1" value="H"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">高 <span class="cat6-opt-en">High</span></span><span class="cat6-opt-desc"><span class="cat6-g2txt">攻擊者高度可能發起事件</span><span class="cat6-g3txt">高度可能發生，或 10–100 次／年</span></span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l1 cat6-l1-m" type="radio" name="l1" value="M"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">中 <span class="cat6-opt-en">Moderate</span></span><span class="cat6-opt-desc"><span class="cat6-g2txt">攻擊者有一定可能發起事件</span><span class="cat6-g3txt">有一定可能發生，或 1–10 次／年</span></span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l1 cat6-l1-l" type="radio" name="l1" value="L"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">低 <span class="cat6-opt-en">Low</span></span><span class="cat6-opt-desc"><span class="cat6-g2txt">攻擊者不太可能發起事件</span><span class="cat6-g3txt">不太可能，&lt;1 次／年但 &gt;1 次／10 年</span></span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l1 cat6-l1-vl" type="radio" name="l1" value="VL"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極低 <span class="cat6-opt-en">Very Low</span></span><span class="cat6-opt-desc"><span class="cat6-g2txt">攻擊者極不可能發起事件</span><span class="cat6-g3txt">極不可能，&lt;1 次／10 年</span></span></span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="cat6-step cat6-card">
+            <legend class="cat6-legend"><span class="cat6-step-n">4</span>造成不利影響的可能性 <span class="cat6-opt-en">G-4</span></legend>
+            <p class="cat6-hint">這是「會不會造成影響」的可能性，與步驟 6 的影響嚴重度不同。</p>
+            <div class="cat6-opts">
+              <label class="cat6-opt"><input class="cat6-radio cat6-l2 cat6-l2-vh" type="radio" name="l2" value="VH"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極高 <span class="cat6-opt-en">Very High</span></span><span class="cat6-opt-desc">幾乎確定造成不利影響</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l2 cat6-l2-h" type="radio" name="l2" value="H"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">高 <span class="cat6-opt-en">High</span></span><span class="cat6-opt-desc">高度可能造成不利影響</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l2 cat6-l2-m" type="radio" name="l2" value="M"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">中 <span class="cat6-opt-en">Moderate</span></span><span class="cat6-opt-desc">有一定可能造成不利影響</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l2 cat6-l2-l" type="radio" name="l2" value="L"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">低 <span class="cat6-opt-en">Low</span></span><span class="cat6-opt-desc">不太可能造成不利影響</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-l2 cat6-l2-vl" type="radio" name="l2" value="VL"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極低 <span class="cat6-opt-en">Very Low</span></span><span class="cat6-opt-desc">極不可能造成不利影響</span></span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- 欄 2：G-5 矩陣 -->
+        <div class="cat6-col cat6-col--matrix">
+          <div class="cat6-card">
+            <p class="cat6-legend"><span class="cat6-step-n">5</span>整體可能性 Overall Likelihood（G-5 查表）</p>
+            <div class="cat6-result">
+              <p class="cat6-result-v" aria-live="polite">
+                <span class="cat6-pending cat6-res-pending">未完成評估</span>
+                <span class="cat6-chip cat6-chip--vl cat6-res cat6-res--vl">極低 <span class="cat6-chip-en">Very Low</span></span>
+                <span class="cat6-chip cat6-chip--l cat6-res cat6-res--l">低 <span class="cat6-chip-en">Low</span></span>
+                <span class="cat6-chip cat6-chip--m cat6-res cat6-res--m">中 <span class="cat6-chip-en">Moderate</span></span>
+                <span class="cat6-chip cat6-chip--h cat6-res cat6-res--h">高 <span class="cat6-chip-en">High</span></span>
+                <span class="cat6-chip cat6-chip--vh cat6-res cat6-res--vh">極高 <span class="cat6-chip-en">Very High</span></span>
+              </p>
+            </div>
+          </div>
+          <div class="cat6-tablewrap">
+            <table class="cat6-g5">
+              <caption class="cat6-g5-cap">列：事件發起／發生可能性　欄：造成不利影響可能性。白框為目前交點。</caption>
+              <thead>
+                <tr>
+                  <th class="cat6-g5-corner" scope="col">發生 ＼ 影響</th>
+                  <th class="cat6-g5-colh cat6-g5-c-vl" scope="col">極低</th>
+                  <th class="cat6-g5-colh cat6-g5-c-l" scope="col">低</th>
+                  <th class="cat6-g5-colh cat6-g5-c-m" scope="col">中</th>
+                  <th class="cat6-g5-colh cat6-g5-c-h" scope="col">高</th>
+                  <th class="cat6-g5-colh cat6-g5-c-vh" scope="col">極高</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th class="cat6-g5-rowh cat6-g5-r-vh" scope="row">極高</th>
+                  <td class="cat6-g5-cell cat6-g5-r-vh cat6-g5-c-vl cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vh cat6-g5-c-l cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vh cat6-g5-c-m cat6-lvbg-h">高<span class="cat6-g5-en">H</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vh cat6-g5-c-h cat6-lvbg-vh">極高<span class="cat6-g5-en">VH</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vh cat6-g5-c-vh cat6-lvbg-vh">極高<span class="cat6-g5-en">VH</span></td>
+                </tr>
+                <tr>
+                  <th class="cat6-g5-rowh cat6-g5-r-h" scope="row">高</th>
+                  <td class="cat6-g5-cell cat6-g5-r-h cat6-g5-c-vl cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-h cat6-g5-c-l cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-h cat6-g5-c-m cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-h cat6-g5-c-h cat6-lvbg-h">高<span class="cat6-g5-en">H</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-h cat6-g5-c-vh cat6-lvbg-vh">極高<span class="cat6-g5-en">VH</span></td>
+                </tr>
+                <tr>
+                  <th class="cat6-g5-rowh cat6-g5-r-m" scope="row">中</th>
+                  <td class="cat6-g5-cell cat6-g5-r-m cat6-g5-c-vl cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-m cat6-g5-c-l cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-m cat6-g5-c-m cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-m cat6-g5-c-h cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-m cat6-g5-c-vh cat6-lvbg-h">高<span class="cat6-g5-en">H</span></td>
+                </tr>
+                <tr>
+                  <th class="cat6-g5-rowh cat6-g5-r-l" scope="row">低</th>
+                  <td class="cat6-g5-cell cat6-g5-r-l cat6-g5-c-vl cat6-lvbg-vl">極低<span class="cat6-g5-en">VL</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-l cat6-g5-c-l cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-l cat6-g5-c-m cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-l cat6-g5-c-h cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-l cat6-g5-c-vh cat6-lvbg-m">中<span class="cat6-g5-en">M</span></td>
+                </tr>
+                <tr>
+                  <th class="cat6-g5-rowh cat6-g5-r-vl" scope="row">極低</th>
+                  <td class="cat6-g5-cell cat6-g5-r-vl cat6-g5-c-vl cat6-lvbg-vl">極低<span class="cat6-g5-en">VL</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vl cat6-g5-c-l cat6-lvbg-vl">極低<span class="cat6-g5-en">VL</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vl cat6-g5-c-m cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vl cat6-g5-c-h cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                  <td class="cat6-g5-cell cat6-g5-r-vl cat6-g5-c-vh cat6-lvbg-l">低<span class="cat6-g5-en">L</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 欄 3：影響、風險、依據 -->
+        <div class="cat6-col cat6-col--result">
+          <fieldset class="cat6-step cat6-card">
+            <legend class="cat6-legend"><span class="cat6-step-n">6</span>影響程度 Impact</legend>
+            <p class="cat6-hint">請依組織承受能力判定，不以損失金額自動決定。</p>
+            <div class="cat6-opts">
+              <label class="cat6-opt"><input class="cat6-radio cat6-imp cat6-imp-vh" type="radio" name="impact" value="VH"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極高 <span class="cat6-opt-en">Very High</span></span><span class="cat6-opt-desc">多項嚴重／災難性不利影響</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-imp cat6-imp-h" type="radio" name="impact" value="H"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">高 <span class="cat6-opt-en">High</span></span><span class="cat6-opt-desc">主要功能無法執行、重大資產或財務損失</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-imp cat6-imp-m" type="radio" name="impact" value="M"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">中 <span class="cat6-opt-en">Moderate</span></span><span class="cat6-opt-desc">主要功能可執行但效能顯著下降，或顯著損失</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-imp cat6-imp-l" type="radio" name="impact" value="L"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">低 <span class="cat6-opt-en">Low</span></span><span class="cat6-opt-desc">有限影響，效能明顯下降或輕微損失</span></span></label>
+              <label class="cat6-opt"><input class="cat6-radio cat6-imp cat6-imp-vl" type="radio" name="impact" value="VL"><span class="cat6-opt-dot" aria-hidden="true"></span><span class="cat6-opt-body"><span class="cat6-opt-name">極低 <span class="cat6-opt-en">Very Low</span></span><span class="cat6-opt-desc">只有可忽略的不利影響</span></span></label>
+            </div>
+          </fieldset>
+
+          <div class="cat6-risk">
+            <p class="cat6-legend"><span class="cat6-step-n">7</span>風險 Risk</p>
+            <p class="cat6-risk-state">待設定風險判定規則</p>
+            <p class="cat6-small">附件尚未提供最終風險矩陣，G-5 不是風險矩陣，也不使用 L×I 計算。以下僅呈現目前配對。</p>
+            <dl class="cat6-risk-pair">
+              <dt class="cat6-risk-pair-k">情境</dt>
+              <dd class="cat6-risk-pair-v"><span class="cat6-pending cat6-target-pending">未選擇</span><span class="cat6-target cat6-target--a">A 破解軟體</span><span class="cat6-target cat6-target--b">B 更新延後</span><span class="cat6-target cat6-target--c">C 釣魚匯款</span></dd>
+              <dt class="cat6-risk-pair-k">事件類型</dt>
+              <dd class="cat6-risk-pair-v"><span class="cat6-pending cat6-type-pending">未選擇</span><span class="cat6-typeres cat6-typeres--adv">敵對（G-2）</span><span class="cat6-typeres cat6-typeres--non">非敵對（G-3）</span></dd>
+              <dt class="cat6-risk-pair-k">整體可能性</dt>
+              <dd class="cat6-risk-pair-v">
+                <span class="cat6-pending cat6-res-pending">未完成評估</span>
+                <span class="cat6-chip cat6-chip--vl cat6-res cat6-res--vl">極低 <span class="cat6-chip-en">VL</span></span>
+                <span class="cat6-chip cat6-chip--l cat6-res cat6-res--l">低 <span class="cat6-chip-en">L</span></span>
+                <span class="cat6-chip cat6-chip--m cat6-res cat6-res--m">中 <span class="cat6-chip-en">M</span></span>
+                <span class="cat6-chip cat6-chip--h cat6-res cat6-res--h">高 <span class="cat6-chip-en">H</span></span>
+                <span class="cat6-chip cat6-chip--vh cat6-res cat6-res--vh">極高 <span class="cat6-chip-en">VH</span></span>
+              </dd>
+              <dt class="cat6-risk-pair-k">影響程度</dt>
+              <dd class="cat6-risk-pair-v">
+                <span class="cat6-pending cat6-imp-pending">未評估</span>
+                <span class="cat6-chip cat6-chip--vl cat6-impres cat6-impres--vl">極低 <span class="cat6-chip-en">VL</span></span>
+                <span class="cat6-chip cat6-chip--l cat6-impres cat6-impres--l">低 <span class="cat6-chip-en">L</span></span>
+                <span class="cat6-chip cat6-chip--m cat6-impres cat6-impres--m">中 <span class="cat6-chip-en">M</span></span>
+                <span class="cat6-chip cat6-chip--h cat6-impres cat6-impres--h">高 <span class="cat6-chip-en">H</span></span>
+                <span class="cat6-chip cat6-chip--vh cat6-impres cat6-impres--vh">極高 <span class="cat6-chip-en">VH</span></span>
+              </dd>
+            </dl>
+          </div>
+
+          <div class="cat6-card">
+            <label class="cat6-label" for="cat6-basis">評估依據 <span class="cat6-tag cat6-tag--user">使用者評估</span></label>
+            <textarea class="cat6-input cat6-input--area" id="cat6-basis" name="basis" placeholder="寫下判級理由，例如引用的準則文字與組織狀況"></textarea>
+            <div class="cat6-formbar">
+              <button class="cat6-btn cat6-btn--ghost" type="reset">清除本次選擇</button>
+              <p class="cat6-small">原型不保存資料，重新整理後會清空。</p>
+            </div>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- 評分準則 -->
+    <section class="cat6-section cat6-criteria" id="criteria" aria-labelledby="cat6-crit-h">
+      <h2 class="cat6-h2" id="cat6-crit-h">評分準則</h2>
+      <p class="cat6-lead">依提供之 NIST 準則整理，非 NIST 官方認證。代表值僅為附件標示，不是機率百分比，也不是官方乘積公式；Very Low 的代表值 0 不代表零風險。</p>
+
+      <div class="cat6-criteria-grid">
+        <div class="cat6-tablewrap">
+          <table class="cat6-table cat6-table--compact">
+            <caption class="cat6-g5-cap">共用等級</caption>
+            <thead><tr><th scope="col">等級</th><th scope="col">半量化區間</th><th scope="col">代表值</th></tr></thead>
+            <tbody>
+              <tr><td><span class="cat6-chip cat6-chip--vh">極高 <span class="cat6-chip-en">Very High</span></span></td><td class="cat6-num">96–100</td><td class="cat6-num">10</td></tr>
+              <tr><td><span class="cat6-chip cat6-chip--h">高 <span class="cat6-chip-en">High</span></span></td><td class="cat6-num">80–95</td><td class="cat6-num">8</td></tr>
+              <tr><td><span class="cat6-chip cat6-chip--m">中 <span class="cat6-chip-en">Moderate</span></span></td><td class="cat6-num">21–79</td><td class="cat6-num">5</td></tr>
+              <tr><td><span class="cat6-chip cat6-chip--l">低 <span class="cat6-chip-en">Low</span></span></td><td class="cat6-num">5–20</td><td class="cat6-num">2</td></tr>
+              <tr><td><span class="cat6-chip cat6-chip--vl">極低 <span class="cat6-chip-en">Very Low</span></span></td><td class="cat6-num">0–4</td><td class="cat6-num">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="cat6-tabs" role="radiogroup" aria-label="準則分頁">
+            <label class="cat6-tab"><input class="cat6-radio cat6-tab-g2" type="radio" name="crit" checked><span class="cat6-tab-code">G-2</span>敵對事件</label>
+            <label class="cat6-tab"><input class="cat6-radio cat6-tab-g3" type="radio" name="crit"><span class="cat6-tab-code">G-3</span>非敵對事件</label>
+            <label class="cat6-tab"><input class="cat6-radio cat6-tab-g4" type="radio" name="crit"><span class="cat6-tab-code">G-4</span>造成影響可能性</label>
+            <label class="cat6-tab"><input class="cat6-radio cat6-tab-g5" type="radio" name="crit"><span class="cat6-tab-code">G-5</span>整體可能性</label>
+            <label class="cat6-tab"><input class="cat6-radio cat6-tab-imp" type="radio" name="crit">Impact 影響程度</label>
+          </div>
+
+          <div class="cat6-panel cat6-panel--g2">
+            <p class="cat6-small">來源：NIST-Likehood Criteria.pdf（G-2）</p>
+            <div class="cat6-tablewrap"><table class="cat6-table">
+              <thead><tr><th scope="col">等級</th><th scope="col">判定文字</th></tr></thead>
+              <tbody>
+                <tr><td><span class="cat6-chip cat6-chip--vh">極高</span></td><td>攻擊者幾乎確定會發起威脅事件</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--h">高</span></td><td>攻擊者高度可能發起威脅事件</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--m">中</span></td><td>攻擊者有一定可能發起威脅事件</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--l">低</span></td><td>攻擊者不太可能發起威脅事件</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--vl">極低</span></td><td>攻擊者極不可能發起威脅事件</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+
+          <div class="cat6-panel cat6-panel--g3">
+            <p class="cat6-small">來源：NIST-Likehood Criteria.pdf（G-3）。資料品質提示：頻率在 10 次／年處重疊，恰好 1 次／10 年未明列，邊界待確認；頻率不自動判級。</p>
+            <div class="cat6-tablewrap"><table class="cat6-table">
+              <thead><tr><th scope="col">等級</th><th scope="col">判定文字</th><th scope="col">頻率（原文）</th></tr></thead>
+              <tbody>
+                <tr><td><span class="cat6-chip cat6-chip--vh">極高</span></td><td>幾乎確定發生</td><td class="cat6-num">&gt;100 次／年</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--h">高</span></td><td>高度可能發生</td><td class="cat6-num">10–100 次／年</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--m">中</span></td><td>有一定可能發生</td><td class="cat6-num">1–10 次／年</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--l">低</span></td><td>不太可能發生</td><td class="cat6-num">&lt;1 次／年，&gt;1 次／10 年</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--vl">極低</span></td><td>極不可能發生</td><td class="cat6-num">&lt;1 次／10 年</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+
+          <div class="cat6-panel cat6-panel--g4">
+            <p class="cat6-small">來源：NIST-Likehood Criteria.pdf（G-4）。此為造成影響的可能性，不是影響嚴重度。</p>
+            <div class="cat6-tablewrap"><table class="cat6-table">
+              <thead><tr><th scope="col">等級</th><th scope="col">判定文字</th></tr></thead>
+              <tbody>
+                <tr><td><span class="cat6-chip cat6-chip--vh">極高</span></td><td>事件發生後幾乎確定造成不利影響</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--h">高</span></td><td>高度可能造成不利影響</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--m">中</span></td><td>有一定可能造成不利影響</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--l">低</span></td><td>不太可能造成不利影響</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--vl">極低</span></td><td>極不可能造成不利影響</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+
+          <div class="cat6-panel cat6-panel--g5">
+            <p class="cat6-small">來源：NIST-Likehood Criteria.pdf（G-5）。只能查表，不以乘法、平均或最大值替代。<a class="cat6-inlink" href="#assess">在評估面板操作</a></p>
+            <div class="cat6-tablewrap"><table class="cat6-table">
+              <thead><tr><th scope="col">發生 ＼ 影響</th><th scope="col">極低</th><th scope="col">低</th><th scope="col">中</th><th scope="col">高</th><th scope="col">極高</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">極高</th><td>低</td><td>中</td><td>高</td><td>極高</td><td>極高</td></tr>
+                <tr><th scope="row">高</th><td>低</td><td>中</td><td>中</td><td>高</td><td>極高</td></tr>
+                <tr><th scope="row">中</th><td>低</td><td>低</td><td>中</td><td>中</td><td>高</td></tr>
+                <tr><th scope="row">低</th><td>極低</td><td>低</td><td>低</td><td>中</td><td>中</td></tr>
+                <tr><th scope="row">極低</th><td>極低</td><td>極低</td><td>低</td><td>低</td><td>低</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+
+          <div class="cat6-panel cat6-panel--imp">
+            <p class="cat6-small">來源：NIST-Impact Criteria.pdf。每次判級需寫下文字依據，不依金額自動決定。</p>
+            <div class="cat6-tablewrap"><table class="cat6-table">
+              <thead><tr><th scope="col">等級</th><th scope="col">判定文字</th></tr></thead>
+              <tbody>
+                <tr><td><span class="cat6-chip cat6-chip--vh">極高</span></td><td>對組織營運、資產、個人、其他組織或國家造成多項嚴重／災難性（severe / catastrophic）不利影響</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--h">高</span></td><td>嚴重／災難性不利影響，例如主要功能無法執行、重大資產損害、重大財務損失，或人員遭受嚴重／致命傷害</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--m">中</span></td><td>重大（serious）不利影響；主要功能仍可執行，但效能顯著下降，或造成顯著資產／財務損失</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--l">低</span></td><td>有限（limited）影響；主要功能仍可執行，但效能明顯下降，或輕微資產／財務損失</td></tr>
+                <tr><td><span class="cat6-chip cat6-chip--vl">極低</span></td><td>只有可忽略（negligible）的不利影響</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="cat6-foot">
+      <div class="cat6-foot-grid">
+        <div>
+          <p class="cat6-foot-h">資料來源</p>
+          <p class="cat6-foot-p">資安威脅情境分析.pdf、NIST-Likehood Criteria.pdf、NIST-Impact Criteria.pdf</p>
+        </div>
+        <div>
+          <p class="cat6-foot-h">準則說明</p>
+          <p class="cat6-foot-p">依提供之 NIST 準則整理，未宣稱經 NIST 官方認證或已核對官方原文。</p>
+        </div>
+        <div>
+          <p class="cat6-foot-h">原型範圍</p>
+          <p class="cat6-foot-p">純 HTML/CSS。保存、JSON／CSV 匯出、情境增刪改與搜尋需 JavaScript，列為下一階段。</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
